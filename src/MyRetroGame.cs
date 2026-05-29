@@ -1,28 +1,9 @@
-﻿/*
-    Framework to write a simple retro game in pixel art.
-    Copyright (C) 2026  Giovanni Volpintesta
-
-    This program is free software: you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
-
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
-
-    You should have received a copy of the GNU General Public License
-    along with this program.  If not, see <https://www.gnu.org/licenses/>.
-    
-    Contact the author to: john.foxinhead@gmail.com
-
-*/
-
-using System;
-using System.Windows.Forms;
-using System.Drawing;
 using RetroGameFramework;
+using System;
+using System.Drawing;
+using System.Drawing.Drawing2D;
+using System.Windows.Forms;
+using System.Windows.Media;
 
 namespace RetroGameDemo
 {
@@ -38,59 +19,18 @@ namespace RetroGameDemo
         // Declare here game-specific data that should survive the frame
         float[] ballPosition; // ball position in screen pixels (float to consider also half pixels)
         float[] ballSpeed; // ball speed in pixels per frame (float to consider also half pixels)
-
+        float[] melapox= {10,10};
         int ballColor = 1;
-
-        GameImage ballImage = new GameImage(new int[,] {
-            { 0, 1, 0},
-            { 1, 1, 1},
-            { 1, 1, 0}
-        }, AnchorType.Center);
+        int melacolor = 2;
+        int avvelenata = -1;
+        float[,] coda = new float[2, 20];
+        int lunghezza = 5;
+        Random fede = new Random();
         PaintStyle ballStyle = PaintStyle.Default;
 
-        GameImage starImage = new GameImage(new int[,] {
-            { 0,0,0,0,0,1,0,0,0,0,0 },
-            { 0,0,0,0,0,1,0,0,0,0,0 },
-            { 0,0,0,0,1,1,1,0,0,0,0 },
-            { 1,1,1,1,1,1,1,1,1,1,1 },
-            { 0,0,1,1,1,1,1,1,1,0,0 },
-            { 0,0,0,1,1,1,1,1,0,0,0 },
-            { 0,0,0,1,1,1,1,1,0,0,0 },
-            { 0,0,1,1,0,0,0,1,1,0,0 },
-            { 0,0,1,0,0,0,0,0,1,0,0 }
-        }, AnchorType.Center);
-        PaintStyle starStyle = PaintStyle.Default;
-
-        GameImage squareImage = GameImage.CreateFromRows(new string[] {
-            "*********",
-            "*       *",
-            "* $$$$$ *",
-            "* $   $ *",
-            "* $ . $ *",
-            "* $   $ *",
-            "* $$$$$ *",
-            "*       *",
-            "*********",
-        }, new char[] { ' ', '*', '$', '.' }, AnchorType.Center);
-        PaintStyle squareStyle1 = PaintStyle.Default;
-
-        GameImage squareImage2 = GameImage.CreateFromString(
-            "*********\n" +
-            "*       *\r\n"+
-            "* $$$$$ *\n"+
-            "* $   $ *\r\n"+
-            "* $ . $ *\n"+
-            "* $   $ *\r\r\n"+
-            "* $$$$$ *\r\r\r\r\n"+
-            "*       *\r\r\r\n"+
-            "*********",
-        new char[] { ' ', '*', '$', '.' }, AnchorType.Center);
-        PaintStyle squareStyle2 = PaintStyle.Default;
 
         GameImage hearthImage = GameImage.CreateFromResource("hearth", AnchorType.Center);
         PaintStyle hearthStyle = PaintStyle.Default;
-
-        PaintStyle textStyle = PaintStyle.Default;
 
         // Initialization call, used to customize GameConfig data (used to customize the engine behaviour)
         protected override void OnInitGameConfig(GameConfig GameConfig)
@@ -123,24 +63,16 @@ namespace RetroGameDemo
         private void FirstFrameLoop ()
         {
             // set the ball in the center of the screen
+           
             ballPosition = new float[] { GameConfig.PixelsMatrixWidth / 2, GameConfig.PixelsMatrixHeight / 2 };
 
             // give the fall a speed
-            ballSpeed = new float[] { 2, 2 };
+            ballSpeed = new float[] { 1, 0 };
 
             ballStyle.SetColorRemap(1, 2); // start from first additional color;
 
-            squareStyle1.EnsureColorRemapSize(4);
-
-            squareStyle2.SetColorRemap(1, 4);
-            squareStyle2.SetColorRemap(2, 5);
-            squareStyle2.SetColorRemap(3, 6);
-
             hearthStyle.SetColorRemap(1, 2);
             hearthStyle.SetColorRemap(2, 8);
-
-            textStyle.transparentBackground = true;
-            textStyle.SetColorRemap(1, 5);
         }
 
         // Called once per frame, BEFORE the OnLoopGame event.
@@ -160,91 +92,162 @@ namespace RetroGameDemo
             else
             {
                 UpdateBallPosition();
+                melaposizione();
+                sistemacoda();
             }
         }
+
 
         // Called once per frame, AFTER the OnLoopGame event.
         protected override void OnDraw(int[,] pixels)
         {
             int screenWidth = pixels.GetLength(0);
             int screenHeight = pixels.GetLength(1);
+            DrawBall(pixels, ballColor);
+            Drawmela(pixels, melacolor);
+            Drawcoda(pixels, ballColor);
+                
+        }
+        private void Drawcoda(int[,] pixels, int color)
+        {
+            for(int i=0; i<lunghezza; i++)
+            {
+                DrawPixel(pixels, coda[0,i], coda[1,i], color);
+            }
+        }
+        private void sistemacoda()
+        {
+            int rows= coda.GetLength(0); 
+            int cols = coda.GetLength(1);   
 
-            // Write text onto the pixel matrix
-            Writing.Print(pixels, "Demo", Writing.Top_Left);
-            // Write text onto the pixel matrix
-            Writing.Print(pixels, "Demo", Writing.Top_Right, textStyle);
+            for (int i = 0; i < rows; i++)
+            {
+                for (int j = cols - 1; j > 0; j--)
+                {
+                    coda[i, j] = coda[i, j - 1];
+                }
 
-            // Draw the background star images at the center of the screen
-            GameUtils.DrawImageOnScreen(pixels, starImage, new Point((int)(screenWidth * 0.25), (int)(screenHeight * 0.25)), starStyle);
-            GameUtils.DrawImageOnScreen(pixels, starImage, new Point((int)(screenWidth * 0.25), (int)(screenHeight * 0.75)), starStyle);
+                coda[i, 0] = 0;
+            }
 
-            GameUtils.DrawImageOnScreen(pixels, squareImage, new Point((int)(screenWidth * 0.75), (int)(screenHeight * 0.25)), squareStyle1);
-            GameUtils.DrawImageOnScreen(pixels, squareImage2, new Point((int)(screenWidth * 0.75), (int)(screenHeight * 0.75)), squareStyle2);
-
-            GameUtils.DrawImageOnScreen(pixels, hearthImage, new Point((int)(screenWidth * 0.50), (int)(screenHeight * 0.50)), hearthStyle);
-
-            DrawBall(pixels, ballColor); // set the foregorund color in the current ball location
-            // GameUtils.DrawImageOnScreen(pixels, ballImage, new Point((int)ballPosition[0], (int)ballPosition[1]), ballStyle);
         }
 
         // Called at the end of the last frame of the game.
         // Its main purpose it's to dispose resources, as the game will end immediately after this call.
         protected override void OnEndGame()
         {
+            Environment.Exit(0);
+        }
+        private void avvelenamento()
+        {
+            if (avvelenata == 1)
+            {
+                melacolor = 2;
+            }
+            else
+            {
+                if (fede.Next(1, 2) == 1)
+                {
+                    avvelenata = 2;
+                    melacolor = 6;
+                }
+                else
+                {
+                    melacolor = 2;
+                }
+                
+            }
+            avvelenata -= 1;
+        }
+        private void melaposizione()
+        {
+            if (Math.Abs(ballPosition[0] - melapox[0]) < 2 && Math.Abs(ballPosition[1] - melapox[1]) < 2)
+            {
+                lunghezza+=2 ;
+                avvelenamento();
+                bool conferma = true;
+                while (conferma)
+                {
+                    int controllo = 0;
+                    melapox[0] = fede.Next(GameConfig.PixelsMatrixWidth - 4);
+                    melapox[1] = fede.Next(GameConfig.PixelsMatrixHeight - 4);
+                    if (Math.Abs(ballPosition[0] - melapox[0]) > 2 || Math.Abs(ballPosition[1] - melapox[1]) > 2)
+                    {
+                        for (int i = 0; i < lunghezza; i++)
+                        {
+                            if (Math.Abs(ballPosition[0] - melapox[0]) <= 2 || Math.Abs(ballPosition[1] - melapox[1]) <= 2)
+                            {
+                                controllo++;
+                            }
+                        }
+                        if (controllo == 0)
+                        {
+                            conferma= false;
+                        }
+                    }
+                }
+
+
+            }
 
         }
-
         private void UpdateBallPosition()
         {
-            // Update ball's position
+
+            coda[0, 0] = ballPosition[0];
+            coda[1,0] = ballPosition[1];
             ballPosition[0] += ballSpeed[0];
             ballPosition[1] += ballSpeed[1];
+            
+            
 
-            // Check hits with screen bounds to make the ball bounce
-            // The bounce is cheched with a margin to consider the ball dimension
-            // In the collision checkings, the radius is always reduced by 0.5 beceuse the center pixel should not be computed.
-
-            float ballRadius = 1.5f;
+            float ballRadius = 0f;
 
             if (ballSpeed[0] < 0 && ballPosition[0] - (ballRadius - 0.5f) <= 0) // horizontal check to the left
             {
-                // if the ball is going to the left and it went outside the left screen bound,
-                ballPosition[0] += (ballRadius - 0.5f) - ballPosition[0]; // correct the position after the bounce
-                ballSpeed[0] *= -1; // flip the speed direction
+                IsPaused();
+                OnEndGame();
             }
             else if (ballSpeed[0] > 0 && ballPosition[0] + (ballRadius - 0.5) >= GameConfig.PixelsMatrixWidth - 1) // horizontal check to the right
             {
-                // if the ball is going to the right and it went outside the right screen bound,
-                ballPosition[0] -= ballPosition[0] - (GameConfig.PixelsMatrixWidth - 1 - (ballRadius - 0.5f)); // correct the position after the bounce
-                ballSpeed[0] *= -1; // flip the speed direction
+                IsPaused();
+                OnEndGame();
             }
 
             if (ballSpeed[1] < 0 && ballPosition[1] - (ballRadius - 0.5f) <= 0) // vertical check to the top
             {
-                // if the ball is going up and it went outside the top screen bound,
-                ballPosition[1] += (ballRadius - 0.5f) - ballPosition[1]; // correct the position after the bounce
-                ballSpeed[1] *= -1; // flip the speed direction
+                IsPaused();
+                OnEndGame();
             }
             else if (ballSpeed[1] > 0 && ballPosition[1] + (ballRadius - 0.5f) >= GameConfig.PixelsMatrixHeight - 1) // vertical check to the bottom
             {
-                // if the ball is going down and it went outside the bottom screen bound,
-                ballPosition[1] -= ballPosition[1] - (GameConfig.PixelsMatrixHeight - 1 - (ballRadius - 0.5f)); // correct the position after the bounce
-                ballSpeed[1] *= -1; // flip the speed direction
+                IsPaused();
+                OnEndGame();
+            }
+            for(int i =0; i < lunghezza; i++)
+            {
+                if (ballPosition[0] == coda[0, i] && ballPosition[1] == coda[1, i])
+                {
+                    IsPaused();
+                    OnEndGame();
+                }
             }
         }
-
         private void DrawBall(int[,] pixels, int color)
         {
-            // BALL EXAMPLE:     1  
-            //                  234 
-            //                  65  
+            DrawPixel(pixels, ballPosition[0],ballPosition[1],color);
 
-            DrawPixel(pixels, ballPosition[0] - 1,  ballPosition[1],        color);  // 1
-            DrawPixel(pixels, ballPosition[0],      ballPosition[1] - 1,    color);  // 2
-            DrawPixel(pixels, ballPosition[0],      ballPosition[1],        color);  // 3
-            DrawPixel(pixels, ballPosition[0],      ballPosition[1] + 1,    color);  // 4
-            DrawPixel(pixels, ballPosition[0] + 1,  ballPosition[1],        color);  // 5
-            DrawPixel(pixels, ballPosition[0] - 1,  ballPosition[1] + 1,    color);  // 6
+
+        }
+        private void Drawmela(int[,] pixels, int color)
+        {
+            DrawPixel(pixels, melapox[0], melapox[1]+1, color);
+            DrawPixel(pixels, melapox[0], melapox[1]-1, 3);
+            DrawPixel(pixels, melapox[0]+1, melapox[1], color);
+            DrawPixel(pixels, melapox[0]-1, melapox[1], color);
+            DrawPixel(pixels, melapox[0], melapox[1], color);
+            DrawPixel(pixels, melapox[0] - 1, melapox[1]+1, color);
+            DrawPixel(pixels, melapox[0] +1 , melapox[1]+1, color);
         }
 
         private static void DrawPixel(int[,] pixels, float x, float y, int color)
@@ -266,23 +269,52 @@ namespace RetroGameDemo
             if (!IsPaused())
             {
                 float[] ballSpeedAbs = new float[] { Math.Abs(ballSpeed[0]), Math.Abs(ballSpeed[1]) };
-                if (KeyCode == Keys.Up || KeyCode == Keys.W)
-                {
-                    ballSpeed[1] = -ballSpeedAbs[1];
+                if(avvelenata!=0){
+                    if((KeyCode == Keys.Up || KeyCode == Keys.W) && ballSpeed[0] != 0)
+                    {
+                        ballSpeed[0] = 0;
+                        ballSpeed[1] = -1;
+                    }
+                    else if ((KeyCode == Keys.Down || KeyCode == Keys.S) && ballSpeed[0] != 0)
+                    {
+                        ballSpeed[0] = 0;
+                        ballSpeed[1] = 1;
+                    }
+                    else if ((KeyCode == Keys.Right || KeyCode == Keys.D) && ballSpeed[1] != 0)
+                    {
+                        ballSpeed[0] = 1;
+                        ballSpeed[1] = 0;
+                    }
+                    else if ((KeyCode == Keys.Left || KeyCode == Keys.A) && ballSpeed[1] != 0)
+                    {
+                        ballSpeed[0] = -1;
+                        ballSpeed[1] = 0;
+                    }
                 }
-                else if (KeyCode == Keys.Down || KeyCode == Keys.S)
+                else
                 {
-                    ballSpeed[1] = ballSpeedAbs[1];
+                    if((KeyCode == Keys.Up || KeyCode == Keys.W) && ballSpeed[0] != 0)
+                    {
+                        ballSpeed[0] = 0;
+                        ballSpeed[1] = 1;
+                    }
+                    else if ((KeyCode == Keys.Down || KeyCode == Keys.S) && ballSpeed[0] != 0)
+                    {
+                        ballSpeed[0] = 0;
+                        ballSpeed[1] = -1;
+                    }
+                    else if ((KeyCode == Keys.Right || KeyCode == Keys.D) && ballSpeed[1] != 0)
+                    {
+                        ballSpeed[0] = -1;
+                        ballSpeed[1] = 0;
+                    }
+                    else if ((KeyCode == Keys.Left || KeyCode == Keys.A) && ballSpeed[1] != 0)
+                    {
+                        ballSpeed[0] = 1;
+                        ballSpeed[1] = 0;
+                    }
                 }
-                else if (KeyCode == Keys.Right || KeyCode == Keys.D)
-                {
-                    ballSpeed[0] = ballSpeedAbs[0];
-                }
-                else if (KeyCode == Keys.Left || KeyCode == Keys.A)
-                {
-                    ballSpeed[0] = -ballSpeedAbs[0];
-                }
-                else if (KeyCode == Keys.P)
+                if (KeyCode == Keys.P)
                 {
                     SetPaused(true);
                 }
