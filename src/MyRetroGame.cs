@@ -24,8 +24,8 @@ namespace RetroGameDemo
         int ballColor = 1;
         int melacolor = 2;
         int avvelenata = -1;
-        float[,] coda = new float[2, 50];
-        int lunghezza = 5;
+        float[,] coda = new float[2, 500];
+        int lunghezza = 10;
         Random fede = new Random();
         bool fine = false;
         PaintStyle ballStyle = PaintStyle.Default;
@@ -163,7 +163,7 @@ namespace RetroGameDemo
             }
             else
             {
-                if (fede.Next(1, 2) == 1)
+                if (fede.Next(1, 5) == 1)
                 {
                     avvelenata = 2;
                     melacolor = 6;
@@ -180,34 +180,40 @@ namespace RetroGameDemo
         {
             if (Math.Abs(ballPosition[0] - melapox[0]) < 2 && Math.Abs(ballPosition[1] - melapox[1]) < 2)
             {
-                lunghezza+=2 ;
+                lunghezza += 5;
                 punteggio += 1;
                 avvelenamento();
                 bool conferma = true;
                 while (conferma)
                 {
-                    int controllo = 0;
                     melapox[0] = fede.Next(3, GameConfig.PixelsMatrixWidth - 4);
                     melapox[1] = fede.Next(3, GameConfig.PixelsMatrixHeight - 4);
-                    if (Math.Abs(ballPosition[0] - melapox[0]) > 2 || Math.Abs(ballPosition[1] - melapox[1]) > 2)
+
+                    bool posizioneValida = true;
+
+                    if (Math.Abs(ballPosition[0] - melapox[0]) <= 2 && Math.Abs(ballPosition[1] - melapox[1]) <= 2)
+                    {
+                        posizioneValida = false;
+                    }
+
+                    if (posizioneValida)
                     {
                         for (int i = 0; i < lunghezza; i++)
                         {
-                            if (Math.Abs(ballPosition[0] - melapox[0]) <= 2 || Math.Abs(ballPosition[1] - melapox[1]) <= 2)
+                            
+                            if (melapox[0] == coda[0, i] && melapox[1] == coda[1, i])
                             {
-                                controllo++;
+                                posizioneValida = false;
+                                break;
                             }
                         }
-                        if (controllo == 0)
-                        {
-                            conferma= false;
-                        }
+                    }
+                    if (posizioneValida)
+                    {
+                        conferma = false;
                     }
                 }
-
-
             }
-
         }
         private void UpdateBallPosition()
         {
