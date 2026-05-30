@@ -17,15 +17,17 @@ namespace RetroGameDemo
 
         // GAME DATA
         // Declare here game-specific data that should survive the frame
+        int punteggio=0;
         float[] ballPosition; // ball position in screen pixels (float to consider also half pixels)
         float[] ballSpeed; // ball speed in pixels per frame (float to consider also half pixels)
         float[] melapox= {10,10};
         int ballColor = 1;
         int melacolor = 2;
         int avvelenata = -1;
-        float[,] coda = new float[2, 20];
+        float[,] coda = new float[2, 50];
         int lunghezza = 5;
         Random fede = new Random();
+        bool fine = false;
         PaintStyle ballStyle = PaintStyle.Default;
 
 
@@ -37,11 +39,11 @@ namespace RetroGameDemo
         {
             GameConfig.Title = "Bouncing Ball";
 
-            GameConfig.PixelsMatrixWidth = 64;
-            GameConfig.PixelsMatrixHeight = 48;
+            GameConfig.PixelsMatrixWidth = 120;
+            GameConfig.PixelsMatrixHeight = 60;
             GameConfig.PixelSize = 10;
 
-            GameConfig.FrameRate = 12;
+            GameConfig.FrameRate = 30;
 
             GameConfig.BackgroundColor = System.Drawing.Color.Black;
             //GameForm.Initializer.ForegroundColor = System.Drawing.Color.White;
@@ -101,12 +103,25 @@ namespace RetroGameDemo
         // Called once per frame, AFTER the OnLoopGame event.
         protected override void OnDraw(int[,] pixels)
         {
-            int screenWidth = pixels.GetLength(0);
-            int screenHeight = pixels.GetLength(1);
-            DrawBall(pixels, ballColor);
-            Drawmela(pixels, melacolor);
-            Drawcoda(pixels, ballColor);
-                
+            if (!fine)
+            {
+                int screenWidth = pixels.GetLength(0);
+                int screenHeight = pixels.GetLength(1);
+                DrawBall(pixels, ballColor);
+                Drawmela(pixels, melacolor);
+                Drawcoda(pixels, ballColor);
+                Drawpunteggio(pixels, ballColor);
+            }
+            else
+            {
+                Writing.Print(pixels, "hai ottenuto", Writing.Top_Left);
+                Writing.Print(pixels, $"punteggio di:{punteggio} esc=E", Writing.Bottom_Left);
+            }
+
+        }
+        private void Drawpunteggio(int[,] pixels, int color)
+        {
+            Writing.Print(pixels, $"{punteggio}", Writing.Top_Left);
         }
         private void Drawcoda(int[,] pixels, int color)
         {
@@ -136,6 +151,8 @@ namespace RetroGameDemo
         // Its main purpose it's to dispose resources, as the game will end immediately after this call.
         protected override void OnEndGame()
         {
+
+
             Environment.Exit(0);
         }
         private void avvelenamento()
@@ -164,13 +181,14 @@ namespace RetroGameDemo
             if (Math.Abs(ballPosition[0] - melapox[0]) < 2 && Math.Abs(ballPosition[1] - melapox[1]) < 2)
             {
                 lunghezza+=2 ;
+                punteggio += 1;
                 avvelenamento();
                 bool conferma = true;
                 while (conferma)
                 {
                     int controllo = 0;
-                    melapox[0] = fede.Next(GameConfig.PixelsMatrixWidth - 4);
-                    melapox[1] = fede.Next(GameConfig.PixelsMatrixHeight - 4);
+                    melapox[0] = fede.Next(3, GameConfig.PixelsMatrixWidth - 4);
+                    melapox[1] = fede.Next(3, GameConfig.PixelsMatrixHeight - 4);
                     if (Math.Abs(ballPosition[0] - melapox[0]) > 2 || Math.Abs(ballPosition[1] - melapox[1]) > 2)
                     {
                         for (int i = 0; i < lunghezza; i++)
@@ -205,31 +223,26 @@ namespace RetroGameDemo
 
             if (ballSpeed[0] < 0 && ballPosition[0] - (ballRadius - 0.5f) <= 0) // horizontal check to the left
             {
-                IsPaused();
-                OnEndGame();
+                fine = true;
             }
             else if (ballSpeed[0] > 0 && ballPosition[0] + (ballRadius - 0.5) >= GameConfig.PixelsMatrixWidth - 1) // horizontal check to the right
             {
-                IsPaused();
-                OnEndGame();
+                fine = true;
             }
 
             if (ballSpeed[1] < 0 && ballPosition[1] - (ballRadius - 0.5f) <= 0) // vertical check to the top
             {
-                IsPaused();
-                OnEndGame();
+                fine = true;
             }
             else if (ballSpeed[1] > 0 && ballPosition[1] + (ballRadius - 0.5f) >= GameConfig.PixelsMatrixHeight - 1) // vertical check to the bottom
             {
-                IsPaused();
-                OnEndGame();
+                fine = true;
             }
             for(int i =0; i < lunghezza; i++)
             {
                 if (ballPosition[0] == coda[0, i] && ballPosition[1] == coda[1, i])
                 {
-                    IsPaused();
-                    OnEndGame();
+                    fine = true;
                 }
             }
         }
@@ -269,7 +282,11 @@ namespace RetroGameDemo
             if (!IsPaused())
             {
                 float[] ballSpeedAbs = new float[] { Math.Abs(ballSpeed[0]), Math.Abs(ballSpeed[1]) };
-                if(avvelenata!=0){
+                if (KeyCode == Keys.E)
+                {
+                    OnEndGame();
+                }
+                else if(avvelenata!=0){
                     if((KeyCode == Keys.Up || KeyCode == Keys.W) && ballSpeed[0] != 0)
                     {
                         ballSpeed[0] = 0;
